@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: search-local
+  config:
+    import:
+      - file:services/search/env/local.env[.properties]
+
+server:
+  port: ${SERVER_PORT}

@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: search-prod
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+security:
+  trusted:
+    ips:
+      - ${TRUSTED_IP_GATEWAY}
