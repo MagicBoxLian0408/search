@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/search/history")
+@RequestMapping("/history")
 @RequiredArgsConstructor
 public class HistoryController {
 

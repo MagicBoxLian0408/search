@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/search/recent")
+@RequestMapping("/recent")
 @RequiredArgsConstructor
 public class RecentQueryController {
 
