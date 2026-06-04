@@ -2,6 +2,7 @@ package kr.magicbox.search.adapter.in.web;
 
 import kr.magicbox.search.adapter.in.web.dto.response.CreatorSearchResponse;
 import kr.magicbox.search.adapter.in.web.dto.response.GeneralGoodsSearchResponse;
+import kr.magicbox.search.adapter.in.web.dto.response.PageResponse;
 import kr.magicbox.search.adapter.in.web.dto.response.ReleaseSearchResponse;
 import kr.magicbox.search.application.port.in.PopularQueryUseCase;
 import lombok.RequiredArgsConstructor;
@@ -20,29 +21,26 @@ public class PopularQueryController {
     private final PopularQueryUseCase popularQueryUseCase;
 
     @GetMapping("/creators")
-    public ResponseEntity<List<CreatorSearchResponse>> getPopularCreators() {
-        return ResponseEntity.ok(
-                popularQueryUseCase.getPopularCreators().stream()
-                        .map(CreatorSearchResponse::from)
-                        .toList()
-        );
+    public ResponseEntity<PageResponse<CreatorSearchResponse>> getPopularCreators() {
+        List<CreatorSearchResponse> content = popularQueryUseCase.getPopularCreators().stream()
+                .map(CreatorSearchResponse::from)
+                .toList();
+        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
     }
 
     @GetMapping("/releases")
-    public ResponseEntity<List<ReleaseSearchResponse>> getPopularReleases() {
-        return ResponseEntity.ok(
-                popularQueryUseCase.getPopularReleases().stream()
-                        .map(ReleaseSearchResponse::from)
-                        .toList()
-        );
+    public ResponseEntity<PageResponse<ReleaseSearchResponse>> getPopularReleases() {
+        List<ReleaseSearchResponse> content = popularQueryUseCase.getPopularReleases().stream()
+                .map(ReleaseSearchResponse::from)
+                .toList();
+        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
     }
 
     @GetMapping("/general-goods")
-    public ResponseEntity<List<GeneralGoodsSearchResponse>> getPopularGeneralGoods() {
-        return ResponseEntity.ok(
-                popularQueryUseCase.getPopularGeneralGoods().stream()
-                        .map(GeneralGoodsSearchResponse::from)
-                        .toList()
-        );
+    public ResponseEntity<PageResponse<GeneralGoodsSearchResponse>> getPopularGeneralGoods() {
+        List<GeneralGoodsSearchResponse> content = popularQueryUseCase.getPopularGeneralGoods().stream()
+                .map(GeneralGoodsSearchResponse::from)
+                .toList();
+        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
     }
 }
