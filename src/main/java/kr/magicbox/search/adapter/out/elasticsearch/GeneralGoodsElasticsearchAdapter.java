@@ -1,22 +1,24 @@
 package kr.magicbox.search.adapter.out.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import kr.magicbox.search.adapter.out.elasticsearch.document.GeneralGoodsDocument;
 import kr.magicbox.search.adapter.out.elasticsearch.repository.GeneralGoodsElasticsearchRepository;
 import kr.magicbox.search.application.port.out.GeneralGoodsIndexPort;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 
-@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class GeneralGoodsElasticsearchAdapter implements GeneralGoodsIndexPort {
+
+    private static final String INDEX = "general-goods-index";
 
     private final GeneralGoodsElasticsearchRepository generalGoodsElasticsearchRepository;
     private final ElasticsearchClient elasticsearchClient;
@@ -29,7 +31,7 @@ public class GeneralGoodsElasticsearchAdapter implements GeneralGoodsIndexPort {
     @Override
     public void update(Long generalGoodsId, String name, Long price, Long stock, List<String> mediaUrls) {
         generalGoodsElasticsearchRepository.findByGeneralGoodsId(generalGoodsId).ifPresent(doc -> {
-            GeneralGoodsDocument updated = GeneralGoodsDocument.builder()
+            generalGoodsElasticsearchRepository.save(GeneralGoodsDocument.builder()
                     .id(doc.getId())
                     .generalGoodsId(doc.getGeneralGoodsId())
                     .creatorId(doc.getCreatorId())
@@ -38,8 +40,7 @@ public class GeneralGoodsElasticsearchAdapter implements GeneralGoodsIndexPort {
                     .stock(stock != null ? stock : doc.getStock())
                     .mediaUrls(mediaUrls != null ? mediaUrls : doc.getMediaUrls())
                     .createdAt(doc.getCreatedAt())
-                    .build();
-            generalGoodsElasticsearchRepository.save(updated);
+                    .build());
         });
     }
 
@@ -52,7 +53,7 @@ public class GeneralGoodsElasticsearchAdapter implements GeneralGoodsIndexPort {
     public List<GeneralGoodsDocument> search(String keyword, int page, int size) {
         try {
             SearchResponse<GeneralGoodsDocument> response = elasticsearchClient.search(s -> s
-                    .index("general-goods-index")
+                    .index(INDEX)
                     .from(page * size)
                     .size(size)
                     .query(q -> q
@@ -64,48 +65,39 @@ public class GeneralGoodsElasticsearchAdapter implements GeneralGoodsIndexPort {
                     ),
                     GeneralGoodsDocument.class
             );
-            return response.hits().hits().stream()
-                    .map(Hit::source)
-                    .toList();
+            return toDocuments(response);
         } catch (IOException e) {
-            log.error("[ES] GeneralGoods 검색 실패. keyword={}", keyword, e);
-            return List.of();
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
     public List<GeneralGoodsDocument> findPopular(int size) {
-        try {
-            SearchResponse<GeneralGoodsDocument> response = elasticsearchClient.search(s -> s
-                    .index("general-goods-index")
-                    .size(size)
-                    .sort(sort -> sort.field(f -> f.field("created_at").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc))),
-                    GeneralGoodsDocument.class
-            );
-            return response.hits().hits().stream()
-                    .map(Hit::source)
-                    .toList();
-        } catch (IOException e) {
-            log.error("[ES] 인기 GeneralGoods 조회 실패", e);
-            return List.of();
-        }
+        return findSortedByCreatedAt(size);
     }
 
     @Override
     public List<GeneralGoodsDocument> findRecent(int size) {
+        return findSortedByCreatedAt(size);
+    }
+
+    private List<GeneralGoodsDocument> findSortedByCreatedAt(int size) {
         try {
             SearchResponse<GeneralGoodsDocument> response = elasticsearchClient.search(s -> s
-                    .index("general-goods-index")
+                    .index(INDEX)
                     .size(size)
-                    .sort(sort -> sort.field(f -> f.field("created_at").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc))),
+                    .sort(sort -> sort.field(f -> f.field("created_at").order(SortOrder.Desc))),
                     GeneralGoodsDocument.class
             );
-            return response.hits().hits().stream()
-                    .map(Hit::source)
-                    .toList();
+            return toDocuments(response);
         } catch (IOException e) {
-            log.error("[ES] 최신 GeneralGoods 조회 실패", e);
-            return List.of();
+            throw new UncheckedIOException(e);
         }
+    }
+
+    private List<GeneralGoodsDocument> toDocuments(SearchResponse<GeneralGoodsDocument> response) {
+        return response.hits().hits().stream()
+                .map(Hit::source)
+                .toList();
     }
 }
