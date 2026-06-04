@@ -3,8 +3,70 @@ spring:
     name: search-dev
   jackson:
     property-naming-strategy: SNAKE_CASE
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+    consumer:
+      group-id: search-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.trusted.packages: "kr.magicbox.search.adapter.in.kafka.event"
+        spring.json.type.mapping: >
+          general-goods-created:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsCreatedEvent,
+          general-goods-updated:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsUpdatedEvent,
+          general-goods-deleted:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsDeletedEvent,
+          release-created:kr.magicbox.search.adapter.in.kafka.event.ReleaseCreatedEvent,
+          release-updated:kr.magicbox.search.adapter.in.kafka.event.ReleaseUpdatedEvent,
+          release-deleted:kr.magicbox.search.adapter.in.kafka.event.ReleaseDeletedEvent,
+          creator-certification-approved:kr.magicbox.search.adapter.in.kafka.event.CreatorCertificationApprovedEvent,
+          creator-revoked:kr.magicbox.search.adapter.in.kafka.event.CreatorRevokedEvent,
+          creator-profile-updated:kr.magicbox.search.adapter.in.kafka.event.CreatorProfileUpdatedEvent,
+          user-signup:kr.magicbox.search.adapter.in.kafka.event.UserSignupEvent
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+    retry:
+      topic:
+        backoff:
+          multiplier: 2
+          delay: 1s
+        attempts: 5
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+    elasticsearch:
+      repositories:
+        enabled: true
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI}
 
 security:
   trusted:
     ips:
       - ${TRUSTED_IP_GATEWAY}
+
+inbox:
+  max-event-age-minutes: 5
+
+search:
+  cache:
+    popular-ttl-seconds: 300
+    popular-size: 20
+    recent-list-size: 20
+    history-list-size: 20
+    query-history-size: 20
