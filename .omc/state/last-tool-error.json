@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"git -C /Users/kdw08/Desktop/magicbox/services/search merge main 2>&1\",\"description\":\"Merge main into feat/175\"}",
+  "error": "Exit code 1\nAuto-merging build.gradle\nCONFLICT (content): Merge conflict in build.gradle\nAuto-merging src/main/java/kr/magicbox/search/adapter/in/kafka/aop/IdempotentAspect.java\nCONFLICT (add/add): Merge conflict in src/main/java/kr/magicbox/search/adapter/in/kafka/aop/IdempotentAspect.java\nAuto-merging src/main/java/kr/magicbox/search/adapter/in/kafka/configuration/KafkaConfiguration.java\nCONFLICT (add/add): Merge conflict in src/main/java/kr/magicbox/search/adapter/in/kafka/configuration/Kafka...",
+  "timestamp": "2026-06-07T23:34:56.821Z",
+  "retry_count": 1
+}

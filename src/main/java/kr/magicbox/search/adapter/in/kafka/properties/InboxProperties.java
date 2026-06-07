@@ -8,5 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @RequiredArgsConstructor
 @ConfigurationProperties(prefix = "inbox")
 public class InboxProperties {
-    private final int maxEventAgeMinutes;
+    private final long maxEventAgeMinutes;
 }

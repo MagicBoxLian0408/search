@@ -1,108 +1,122 @@
 package kr.magicbox.search.adapter.out.elasticsearch;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import kr.magicbox.search.adapter.out.elasticsearch.document.CreatorDocument;
-import kr.magicbox.search.adapter.out.elasticsearch.repository.CreatorElasticsearchRepository;
 import kr.magicbox.search.application.port.out.CreatorIndexPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.query.Criteria;
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
-@Repository
+@Component
 @RequiredArgsConstructor
 public class CreatorElasticsearchAdapter implements CreatorIndexPort {
 
-    private static final String INDEX = "creator-index";
-
-    private final CreatorElasticsearchRepository creatorElasticsearchRepository;
-    private final ElasticsearchClient elasticsearchClient;
+    private final ReactiveElasticsearchOperations operations;
 
     @Override
-    public Optional<CreatorDocument> findByCreatorId(Long creatorId) {
-        return creatorElasticsearchRepository.findByCreatorId(creatorId);
+    public Mono<Void> save(CreatorDocument document) {
+        return operations.save(document).then();
     }
 
     @Override
-    public void save(CreatorDocument document) {
-        creatorElasticsearchRepository.save(document);
+    public Mono<Void> updateProfile(Long creatorId, String nickname, String tagline, String profileImageUrl, String introduction, List<String> genres) {
+        return findByCreatorId(creatorId)
+                .flatMap(doc -> {
+                    CreatorDocument updated = CreatorDocument.builder()
+                            .id(doc.getId())
+                            .creatorId(doc.getCreatorId())
+                            .userId(doc.getUserId())
+                            .nickname(nickname != null ? nickname : doc.getNickname())
+                            .tagline(tagline != null ? tagline : doc.getTagline())
+                            .profileImageUrl(profileImageUrl != null ? profileImageUrl : doc.getProfileImageUrl())
+                            .introduction(introduction != null ? introduction : doc.getIntroduction())
+                            .genres(genres != null ? genres : doc.getGenres())
+                            .followerCount(doc.getFollowerCount())
+                            .status(doc.getStatus())
+                            .createdAt(doc.getCreatedAt())
+                            .build();
+                    return operations.save(updated);
+                }).then();
     }
 
     @Override
-    public void update(Long creatorId, String nickname, String tagline, String profileImageUrl) {
-        creatorElasticsearchRepository.findByCreatorId(creatorId).ifPresent(doc -> {
-            creatorElasticsearchRepository.save(CreatorDocument.builder()
-                    .id(doc.getId())
-                    .creatorId(doc.getCreatorId())
-                    .nickname(nickname != null ? nickname : doc.getNickname())
-                    .tagline(tagline != null ? tagline : doc.getTagline())
-                    .profileImageUrl(profileImageUrl != null ? profileImageUrl : doc.getProfileImageUrl())
-                    .genres(doc.getGenres())
-                    .createdAt(doc.getCreatedAt())
-                    .build());
-        });
+    public Mono<Void> updateStatus(Long creatorId, String status) {
+        return findByCreatorId(creatorId)
+                .flatMap(doc -> {
+                    CreatorDocument updated = CreatorDocument.builder()
+                            .id(doc.getId())
+                            .creatorId(doc.getCreatorId())
+                            .userId(doc.getUserId())
+                            .nickname(doc.getNickname())
+                            .tagline(doc.getTagline())
+                            .profileImageUrl(doc.getProfileImageUrl())
+                            .introduction(doc.getIntroduction())
+                            .genres(doc.getGenres())
+                            .followerCount(doc.getFollowerCount())
+                            .status(status)
+                            .createdAt(doc.getCreatedAt())
+                            .build();
+                    return operations.save(updated);
+                }).then();
     }
 
     @Override
-    public void delete(Long creatorId) {
-        creatorElasticsearchRepository.deleteByCreatorId(creatorId);
+    public Mono<CreatorDocument> findByCreatorId(Long creatorId) {
+        CriteriaQuery query = new CriteriaQuery(Criteria.where("creatorId").is(creatorId));
+        return operations.search(query, CreatorDocument.class)
+                .next()
+                .mapNotNull(SearchHit::getContent);
     }
 
     @Override
-    public List<CreatorDocument> search(String keyword, int page, int size) {
-        try {
-            SearchResponse<CreatorDocument> response = elasticsearchClient.search(s -> s
-                    .index(INDEX)
-                    .from(page * size)
-                    .size(size)
-                    .query(q -> q
-                            .multiMatch(m -> m
-                                    .query(keyword)
-                                    .fields("nickname", "tagline")
-                                    .analyzer("nori")
-                            )
-                    ),
-                    CreatorDocument.class
-            );
-            return toDocuments(response);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public Mono<List<CreatorDocument>> searchByKeyword(String keyword, int page, int size) {
+        Criteria criteria = new Criteria("status").is("ACTIVE")
+                .and(new Criteria("nickname").matches(keyword)
+                        .or(new Criteria("tagline").matches(keyword))
+                        .or(new Criteria("introduction").matches(keyword)));
+        CriteriaQuery query = new CriteriaQuery(criteria)
+                .setPageable(PageRequest.of(page, size));
+        return operations.search(query, CreatorDocument.class)
+                .map(SearchHit::getContent)
+                .collectList();
     }
 
     @Override
-    public List<CreatorDocument> findPopular(int size) {
-        return findSortedByCreatedAt(size);
+    public Mono<List<CreatorDocument>> findPopular(int size) {
+        CriteriaQuery query = new CriteriaQuery(Criteria.where("status").is("ACTIVE"))
+                .setPageable(PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "followerCount")));
+        return operations.search(query, CreatorDocument.class)
+                .map(SearchHit::getContent)
+                .collectList();
     }
 
     @Override
-    public List<CreatorDocument> findRecent(int size) {
-        return findSortedByCreatedAt(size);
+    public Mono<List<CreatorDocument>> findRecent(int size) {
+        CriteriaQuery query = new CriteriaQuery(Criteria.where("status").is("ACTIVE"))
+                .setPageable(PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return operations.search(query, CreatorDocument.class)
+                .map(SearchHit::getContent)
+                .collectList();
     }
 
-    private List<CreatorDocument> findSortedByCreatedAt(int size) {
-        try {
-            SearchResponse<CreatorDocument> response = elasticsearchClient.search(s -> s
-                    .index(INDEX)
-                    .size(size)
-                    .sort(sort -> sort.field(f -> f.field("created_at").order(SortOrder.Desc))),
-                    CreatorDocument.class
-            );
-            return toDocuments(response);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private List<CreatorDocument> toDocuments(SearchResponse<CreatorDocument> response) {
-        return response.hits().hits().stream()
-                .map(Hit::source)
-                .toList();
+    @Override
+    public Mono<List<String>> suggest(String keyword) {
+        CriteriaQuery query = new CriteriaQuery(
+                new Criteria("status").is("ACTIVE")
+                        .and(new Criteria("nickname").startsWith(keyword)))
+                .setPageable(PageRequest.of(0, 10));
+        return operations.search(query, CreatorDocument.class)
+                .map(hit -> hit.getContent().getNickname())
+                .collectList();
     }
 }
