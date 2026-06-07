@@ -1,54 +1,74 @@
 package kr.magicbox.search.adapter.out.persistence.entity;
 
-import com.github.lian2945.sonyflake.annotation.SonyflakeId;
-import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 
 @Getter
-@Entity
-@Table(name = "search_inbox", indexes = {
-        @Index(name = "idx_search_inbox_event_id", columnList = "event_id", unique = true)
-})
-@EntityListeners(AuditingEntityListener.class)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
+@Table("search_inbox")
 public class SearchInboxEntity {
 
     @Id
-    @SonyflakeId
     private Long id;
 
-    @Column(name = "event_id", nullable = false, unique = true)
-    private Long eventId;
+    @Column("message_key")
+    private String messageKey;
 
-    @Column(nullable = false)
+    @Column("topic")
     private String topic;
 
-    @Column(name = "kafka_partition", nullable = false)
+    @Column("kafka_partition")
     private Integer partition;
 
-    @Column(name = "kafka_offset", nullable = false)
+    @Column("kafka_offset")
     private Long offset;
 
-    @Column(name = "occurred_at", nullable = false)
+    @Column("status")
+    private SearchInboxStatus status;
+
+    @Column("occurred_at")
     private Instant occurredAt;
 
     @CreatedDate
-    @Column(name = "created_at", updatable = false)
+    @Column("created_at")
     private Instant createdAt;
 
-    @Builder
-    public SearchInboxEntity(Long eventId, String topic, Integer partition, Long offset, Instant occurredAt) {
-        this.eventId = eventId;
-        this.topic = topic;
-        this.partition = partition;
-        this.offset = offset;
-        this.occurredAt = occurredAt;
+    @LastModifiedDate
+    @Column("updated_at")
+    private Instant updatedAt;
+
+    public SearchInboxEntity markProcessed() {
+        return SearchInboxEntity.builder()
+                .id(this.id)
+                .messageKey(this.messageKey)
+                .topic(this.topic)
+                .partition(this.partition)
+                .offset(this.offset)
+                .status(SearchInboxStatus.PROCESSED)
+                .occurredAt(this.occurredAt)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .build();
+    }
+
+    public SearchInboxEntity markDeadLettered() {
+        return SearchInboxEntity.builder()
+                .id(this.id)
+                .messageKey(this.messageKey)
+                .topic(this.topic)
+                .partition(this.partition)
+                .offset(this.offset)
+                .status(SearchInboxStatus.DEAD_LETTERED)
+                .occurredAt(this.occurredAt)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .build();
     }
 }

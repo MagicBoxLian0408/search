@@ -3,36 +3,47 @@ package kr.magicbox.search.application.port.out;
 import kr.magicbox.search.adapter.out.elasticsearch.document.CreatorDocument;
 import kr.magicbox.search.adapter.out.elasticsearch.document.GeneralGoodsDocument;
 import kr.magicbox.search.adapter.out.elasticsearch.document.ReleaseDocument;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface SearchCachePort {
 
-    // Cache Aside - 인기 목록
-    Optional<List<CreatorDocument>> getPopularCreators();
-    void setPopularCreators(List<CreatorDocument> creators);
+    // 인기 목록 캐시 (Cache Aside)
+    Mono<List<CreatorDocument>> getPopularCreators();
+    Mono<Void> setPopularCreators(List<CreatorDocument> list);
 
-    Optional<List<ReleaseDocument>> getPopularReleases();
-    void setPopularReleases(List<ReleaseDocument> releases);
+    Mono<List<ReleaseDocument>> getPopularReleases();
+    Mono<Void> setPopularReleases(List<ReleaseDocument> list);
 
-    Optional<List<GeneralGoodsDocument>> getPopularGeneralGoods();
-    void setPopularGeneralGoods(List<GeneralGoodsDocument> goods);
+    Mono<List<GeneralGoodsDocument>> getPopularGeneralGoods();
+    Mono<Void> setPopularGeneralGoods(List<GeneralGoodsDocument> list);
 
-    // Write Through - 최신 목록
-    void addRecentCreator(CreatorDocument document);
-    List<CreatorDocument> getRecentCreators();
+    // 최신 목록 캐시
+    Mono<List<CreatorDocument>> getRecentCreators();
+    Mono<Void> setRecentCreators(List<CreatorDocument> list);
 
-    void addRecentRelease(ReleaseDocument document);
-    List<ReleaseDocument> getRecentReleases();
+    Mono<List<ReleaseDocument>> getRecentReleases();
+    Mono<Void> setRecentReleases(List<ReleaseDocument> list);
 
-    void addRecentGeneralGoods(GeneralGoodsDocument document);
-    List<GeneralGoodsDocument> getRecentGeneralGoods();
+    Mono<List<GeneralGoodsDocument>> getRecentGeneralGoods();
+    Mono<Void> setRecentGeneralGoods(List<GeneralGoodsDocument> list);
 
-    // Write Through - 개인화 이력
-    void addViewedCreator(Long userId, CreatorDocument document);
-    List<CreatorDocument> getViewedCreators(Long userId);
+    // 인기 검색어 (ZSet)
+    Mono<Void> incrementQueryScore(String keyword);
+    Mono<List<String>> getPopularQueries(int size);
 
-    void addSearchQuery(Long userId, String query);
-    List<String> getSearchQueries(Long userId);
+    // 최근 본 아이템
+    Mono<Void> addViewedCreator(Long userId, CreatorDocument doc);
+    Mono<List<CreatorDocument>> getViewedCreators(Long userId);
+
+    Mono<Void> addViewedRelease(Long userId, ReleaseDocument doc);
+    Mono<List<ReleaseDocument>> getViewedReleases(Long userId);
+
+    Mono<Void> addViewedGeneralGoods(Long userId, GeneralGoodsDocument doc);
+    Mono<List<GeneralGoodsDocument>> getViewedGeneralGoods(Long userId);
+
+    // 최근 검색어
+    Mono<Void> addSearchQuery(Long userId, String keyword);
+    Mono<List<String>> getSearchQueries(Long userId);
 }

@@ -1,50 +1,36 @@
 package kr.magicbox.search.adapter.in.security.filter;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import kr.magicbox.search.adapter.in.security.properties.TrustedIpProperties;
 import kr.magicbox.search.domain.vo.UserId;
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-
-@RequiredArgsConstructor
-public class UserInfoExtractFilter extends OncePerRequestFilter {
-
-    private final TrustedIpProperties trustedIpProperties;
+public class UserInfoExtractFilter implements WebFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        String clientIp = request.getRemoteAddr();
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String userIdHeader = request.getHeaders().getFirst("X-User-Id");
 
-        if (!trustedIpProperties.getIps().contains(clientIp)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String userIdHeader = request.getHeader("X-User-Id");
         if (!isValidUserId(userIdHeader)) {
-            filterChain.doFilter(request, response);
-            return;
+            return chain.filter(exchange);
         }
 
         UserId userId = UserId.of(Long.valueOf(userIdHeader));
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(userId, null));
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userId, null);
 
-        filterChain.doFilter(request, response);
+        return chain.filter(exchange)
+                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
     }
 
-    private boolean isValidUserId(String value) {
+    private boolean isValidUserId(String userIdHeader) {
         try {
-            return Long.parseLong(value) > 0;
+            return Long.parseLong(userIdHeader) > 0;
         } catch (Exception e) {
             return false;
         }

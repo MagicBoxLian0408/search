@@ -1,41 +1,32 @@
 package kr.magicbox.search.adapter.in.security.configuration;
 
 import kr.magicbox.search.adapter.in.security.filter.UserInfoExtractFilter;
-import kr.magicbox.search.adapter.in.security.properties.TrustedIpProperties;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
-@EnableWebSecurity
-@RequiredArgsConstructor
+@EnableWebFluxSecurity
 public class SecurityConfiguration {
 
-    private final TrustedIpProperties trustedIpProperties;
-
     @Bean
-    public UserDetailsService userDetailsService() {
-        return new InMemoryUserDetailsManager();
+    public ReactiveUserDetailsService userDetailsService() {
+        return new MapReactiveUserDetailsService();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(
-                        new UserInfoExtractFilter(trustedIpProperties),
-                        UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .addFilterAt(new UserInfoExtractFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
+                .authorizeExchange(auth -> auth.anyExchange().permitAll())
                 .build();
     }
 }

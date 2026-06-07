@@ -1,19 +1,16 @@
 package kr.magicbox.search.adapter.in.kafka.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
 
 import java.time.Instant;
+import java.util.List;
 
-@Builder
 public record CreatorCertificationApprovedEvent(
         @JsonProperty("user_id") Long userId,
-        @JsonProperty("certification_id") Long certificationId,
-        @JsonProperty("reviewed_at") Instant reviewedAt
+        @JsonProperty("creator_id") Long creatorId,
+        @JsonProperty("nickname") String nickname,
+        @JsonProperty("genres") List<String> genres,
+        @JsonProperty("status") String status,
+        @JsonProperty("occurred_at") Instant occurredAt
 ) implements InboxEvent {
-
-    @Override
-    public Instant occurredAt() {
-        return reviewedAt;
-    }
 }

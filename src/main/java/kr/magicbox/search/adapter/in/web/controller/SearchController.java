@@ -1,4 +1,4 @@
-package kr.magicbox.search.adapter.in.web;
+package kr.magicbox.search.adapter.in.web.controller;
 
 import kr.magicbox.search.adapter.in.web.constants.CursorConstants;
 import kr.magicbox.search.adapter.in.web.dto.response.CreatorSearchResponse;
@@ -9,7 +9,6 @@ import kr.magicbox.search.adapter.in.web.validation.CursorSize;
 import kr.magicbox.search.application.dto.query.SearchCreatorsQuery;
 import kr.magicbox.search.application.dto.query.SearchGeneralGoodsQuery;
 import kr.magicbox.search.application.dto.query.SearchReleasesQuery;
-import kr.magicbox.search.application.dto.result.SearchAllResult;
 import kr.magicbox.search.application.port.in.HistoryUseCase;
 import kr.magicbox.search.application.port.in.PopularQueryUseCase;
 import kr.magicbox.search.application.port.in.RecentQueryUseCase;
@@ -17,6 +16,7 @@ import kr.magicbox.search.application.port.in.SearchAllUseCase;
 import kr.magicbox.search.application.port.in.SearchCreatorsUseCase;
 import kr.magicbox.search.application.port.in.SearchGeneralGoodsUseCase;
 import kr.magicbox.search.application.port.in.SearchReleasesUseCase;
+import kr.magicbox.search.application.port.in.SuggestUseCase;
 import kr.magicbox.search.domain.vo.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -43,128 +44,189 @@ public class SearchController {
     private final PopularQueryUseCase popularQueryUseCase;
     private final RecentQueryUseCase recentQueryUseCase;
     private final HistoryUseCase historyUseCase;
+    private final SuggestUseCase suggestUseCase;
 
     // ===== 검색 =====
 
     @GetMapping("/creators")
-    public ResponseEntity<PageResponse<CreatorSearchResponse>> searchCreators(
+    public Mono<ResponseEntity<PageResponse<CreatorSearchResponse>>> searchCreators(
             @AuthenticationPrincipal UserId userId,
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @CursorSize @RequestParam(defaultValue = CursorConstants.DEFAULT_SIZE) int size
     ) {
-        return ResponseEntity.ok(PageResponse.of(
-                searchCreatorsUseCase.searchCreators(SearchCreatorsQuery.of(userId.value(), keyword, page, size)).stream()
-                        .map(CreatorSearchResponse::from).toList(),
-                page, size));
+        return searchCreatorsUseCase.searchCreators(SearchCreatorsQuery.of(userId.value(), keyword, page, size))
+                .map(results -> ResponseEntity.ok(PageResponse.of(
+                        results.stream().map(CreatorSearchResponse::from).toList(), page, size)));
     }
 
     @GetMapping("/releases")
-    public ResponseEntity<PageResponse<ReleaseSearchResponse>> searchReleases(
+    public Mono<ResponseEntity<PageResponse<ReleaseSearchResponse>>> searchReleases(
             @AuthenticationPrincipal UserId userId,
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @CursorSize @RequestParam(defaultValue = CursorConstants.DEFAULT_SIZE) int size
     ) {
-        return ResponseEntity.ok(PageResponse.of(
-                searchReleasesUseCase.searchReleases(SearchReleasesQuery.of(userId.value(), keyword, page, size)).stream()
-                        .map(ReleaseSearchResponse::from).toList(),
-                page, size));
+        return searchReleasesUseCase.searchReleases(SearchReleasesQuery.of(userId.value(), keyword, page, size))
+                .map(results -> ResponseEntity.ok(PageResponse.of(
+                        results.stream().map(ReleaseSearchResponse::from).toList(), page, size)));
     }
 
     @GetMapping("/general-goods")
-    public ResponseEntity<PageResponse<GeneralGoodsSearchResponse>> searchGeneralGoods(
+    public Mono<ResponseEntity<PageResponse<GeneralGoodsSearchResponse>>> searchGeneralGoods(
             @AuthenticationPrincipal UserId userId,
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @CursorSize @RequestParam(defaultValue = CursorConstants.DEFAULT_SIZE) int size
     ) {
-        return ResponseEntity.ok(PageResponse.of(
-                searchGeneralGoodsUseCase.searchGeneralGoods(SearchGeneralGoodsQuery.of(userId.value(), keyword, page, size)).stream()
-                        .map(GeneralGoodsSearchResponse::from).toList(),
-                page, size));
+        return searchGeneralGoodsUseCase.searchGeneralGoods(SearchGeneralGoodsQuery.of(userId.value(), keyword, page, size))
+                .map(results -> ResponseEntity.ok(PageResponse.of(
+                        results.stream().map(GeneralGoodsSearchResponse::from).toList(), page, size)));
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, Object>> searchAll(
+    public Mono<ResponseEntity<Map<String, Object>>> searchAll(
             @AuthenticationPrincipal UserId userId,
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @CursorSize @RequestParam(defaultValue = CursorConstants.DEFAULT_SIZE) int size
     ) {
-        SearchAllResult result = searchAllUseCase.searchAll(SearchCreatorsQuery.of(userId.value(), keyword, page, size));
-        return ResponseEntity.ok(Map.of(
-                "creators", PageResponse.of(result.creators().stream().map(CreatorSearchResponse::from).toList(), page, size),
-                "releases", PageResponse.of(result.releases().stream().map(ReleaseSearchResponse::from).toList(), page, size),
-                "generalGoods", PageResponse.of(result.generalGoods().stream().map(GeneralGoodsSearchResponse::from).toList(), page, size)
-        ));
+        return searchAllUseCase.searchAll(SearchCreatorsQuery.of(userId.value(), keyword, page, size))
+                .map(result -> ResponseEntity.ok(Map.of(
+                        "creators", PageResponse.of(result.creators().stream().map(CreatorSearchResponse::from).toList(), page, size),
+                        "releases", PageResponse.of(result.releases().stream().map(ReleaseSearchResponse::from).toList(), page, size),
+                        "generalGoods", PageResponse.of(result.generalGoods().stream().map(GeneralGoodsSearchResponse::from).toList(), page, size)
+                )));
+    }
+
+    @GetMapping("/suggest")
+    public Mono<ResponseEntity<List<String>>> suggest(@RequestParam String keyword) {
+        return suggestUseCase.suggest(keyword)
+                .map(ResponseEntity::ok);
     }
 
     // ===== 인기 =====
 
     @GetMapping("/popular/creators")
-    public ResponseEntity<PageResponse<CreatorSearchResponse>> getPopularCreators() {
-        List<CreatorSearchResponse> content = popularQueryUseCase.getPopularCreators().stream()
-                .map(CreatorSearchResponse::from).toList();
-        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+    public Mono<ResponseEntity<PageResponse<CreatorSearchResponse>>> getPopularCreators() {
+        return popularQueryUseCase.getPopularCreators()
+                .map(results -> {
+                    List<CreatorSearchResponse> content = results.stream().map(CreatorSearchResponse::from).toList();
+                    return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+                });
     }
 
     @GetMapping("/popular/releases")
-    public ResponseEntity<PageResponse<ReleaseSearchResponse>> getPopularReleases() {
-        List<ReleaseSearchResponse> content = popularQueryUseCase.getPopularReleases().stream()
-                .map(ReleaseSearchResponse::from).toList();
-        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+    public Mono<ResponseEntity<PageResponse<ReleaseSearchResponse>>> getPopularReleases() {
+        return popularQueryUseCase.getPopularReleases()
+                .map(results -> {
+                    List<ReleaseSearchResponse> content = results.stream().map(ReleaseSearchResponse::from).toList();
+                    return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+                });
     }
 
     @GetMapping("/popular/general-goods")
-    public ResponseEntity<PageResponse<GeneralGoodsSearchResponse>> getPopularGeneralGoods() {
-        List<GeneralGoodsSearchResponse> content = popularQueryUseCase.getPopularGeneralGoods().stream()
-                .map(GeneralGoodsSearchResponse::from).toList();
-        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+    public Mono<ResponseEntity<PageResponse<GeneralGoodsSearchResponse>>> getPopularGeneralGoods() {
+        return popularQueryUseCase.getPopularGeneralGoods()
+                .map(results -> {
+                    List<GeneralGoodsSearchResponse> content = results.stream().map(GeneralGoodsSearchResponse::from).toList();
+                    return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+                });
+    }
+
+    @GetMapping("/popular/queries")
+    public Mono<ResponseEntity<List<String>>> getPopularQueries() {
+        return popularQueryUseCase.getPopularQueries()
+                .map(ResponseEntity::ok);
     }
 
     // ===== 최신 =====
 
     @GetMapping("/recent/creators")
-    public ResponseEntity<PageResponse<CreatorSearchResponse>> getRecentCreators() {
-        List<CreatorSearchResponse> content = recentQueryUseCase.getRecentCreators().stream()
-                .map(CreatorSearchResponse::from).toList();
-        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+    public Mono<ResponseEntity<PageResponse<CreatorSearchResponse>>> getRecentCreators() {
+        return recentQueryUseCase.getRecentCreators()
+                .map(results -> {
+                    List<CreatorSearchResponse> content = results.stream().map(CreatorSearchResponse::from).toList();
+                    return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+                });
     }
 
     @GetMapping("/recent/releases")
-    public ResponseEntity<PageResponse<ReleaseSearchResponse>> getRecentReleases() {
-        List<ReleaseSearchResponse> content = recentQueryUseCase.getRecentReleases().stream()
-                .map(ReleaseSearchResponse::from).toList();
-        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+    public Mono<ResponseEntity<PageResponse<ReleaseSearchResponse>>> getRecentReleases() {
+        return recentQueryUseCase.getRecentReleases()
+                .map(results -> {
+                    List<ReleaseSearchResponse> content = results.stream().map(ReleaseSearchResponse::from).toList();
+                    return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+                });
     }
 
     @GetMapping("/recent/general-goods")
-    public ResponseEntity<PageResponse<GeneralGoodsSearchResponse>> getRecentGeneralGoods() {
-        List<GeneralGoodsSearchResponse> content = recentQueryUseCase.getRecentGeneralGoods().stream()
-                .map(GeneralGoodsSearchResponse::from).toList();
-        return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+    public Mono<ResponseEntity<PageResponse<GeneralGoodsSearchResponse>>> getRecentGeneralGoods() {
+        return recentQueryUseCase.getRecentGeneralGoods()
+                .map(results -> {
+                    List<GeneralGoodsSearchResponse> content = results.stream().map(GeneralGoodsSearchResponse::from).toList();
+                    return ResponseEntity.ok(PageResponse.of(content, 0, content.size()));
+                });
     }
 
     // ===== 이력 =====
 
     @PostMapping("/history/creators/{creatorId}")
-    public ResponseEntity<Void> recordViewedCreator(
+    public Mono<ResponseEntity<Void>> recordViewedCreator(
             @AuthenticationPrincipal UserId userId,
             @PathVariable Long creatorId
     ) {
-        historyUseCase.recordViewedCreator(userId.value(), creatorId);
-        return ResponseEntity.ok().build();
+        return historyUseCase.recordViewedCreator(userId.value(), creatorId)
+                .thenReturn(ResponseEntity.<Void>ok().build());
     }
 
     @GetMapping("/history/creators")
-    public ResponseEntity<List<CreatorSearchResponse>> getViewedCreators(@AuthenticationPrincipal UserId userId) {
-        return ResponseEntity.ok(historyUseCase.getViewedCreators(userId.value()).stream()
-                .map(CreatorSearchResponse::from).toList());
+    public Mono<ResponseEntity<List<CreatorSearchResponse>>> getViewedCreators(
+            @AuthenticationPrincipal UserId userId
+    ) {
+        return historyUseCase.getViewedCreators(userId.value())
+                .map(results -> ResponseEntity.ok(results.stream().map(CreatorSearchResponse::from).toList()));
+    }
+
+    @PostMapping("/history/releases/{releaseId}")
+    public Mono<ResponseEntity<Void>> recordViewedRelease(
+            @AuthenticationPrincipal UserId userId,
+            @PathVariable Long releaseId
+    ) {
+        return historyUseCase.recordViewedRelease(userId.value(), releaseId)
+                .thenReturn(ResponseEntity.<Void>ok().build());
+    }
+
+    @GetMapping("/history/releases")
+    public Mono<ResponseEntity<List<ReleaseSearchResponse>>> getViewedReleases(
+            @AuthenticationPrincipal UserId userId
+    ) {
+        return historyUseCase.getViewedReleases(userId.value())
+                .map(results -> ResponseEntity.ok(results.stream().map(ReleaseSearchResponse::from).toList()));
+    }
+
+    @PostMapping("/history/general-goods/{generalGoodsId}")
+    public Mono<ResponseEntity<Void>> recordViewedGeneralGoods(
+            @AuthenticationPrincipal UserId userId,
+            @PathVariable Long generalGoodsId
+    ) {
+        return historyUseCase.recordViewedGeneralGoods(userId.value(), generalGoodsId)
+                .thenReturn(ResponseEntity.<Void>ok().build());
+    }
+
+    @GetMapping("/history/general-goods")
+    public Mono<ResponseEntity<List<GeneralGoodsSearchResponse>>> getViewedGeneralGoods(
+            @AuthenticationPrincipal UserId userId
+    ) {
+        return historyUseCase.getViewedGeneralGoods(userId.value())
+                .map(results -> ResponseEntity.ok(results.stream().map(GeneralGoodsSearchResponse::from).toList()));
     }
 
     @GetMapping("/history/queries")
-    public ResponseEntity<List<String>> getSearchQueries(@AuthenticationPrincipal UserId userId) {
-        return ResponseEntity.ok(historyUseCase.getSearchQueries(userId.value()));
+    public Mono<ResponseEntity<List<String>>> getSearchQueries(
+            @AuthenticationPrincipal UserId userId
+    ) {
+        return historyUseCase.getSearchQueries(userId.value())
+                .map(ResponseEntity::ok);
     }
 }

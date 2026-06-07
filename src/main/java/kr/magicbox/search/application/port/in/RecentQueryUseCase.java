@@ -1,13 +1,14 @@
 package kr.magicbox.search.application.port.in;
 
-import kr.magicbox.search.adapter.out.elasticsearch.document.CreatorDocument;
-import kr.magicbox.search.adapter.out.elasticsearch.document.GeneralGoodsDocument;
-import kr.magicbox.search.adapter.out.elasticsearch.document.ReleaseDocument;
+import kr.magicbox.search.application.dto.result.CreatorSearchResult;
+import kr.magicbox.search.application.dto.result.GeneralGoodsSearchResult;
+import kr.magicbox.search.application.dto.result.ReleaseSearchResult;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
 public interface RecentQueryUseCase {
-    List<CreatorDocument> getRecentCreators();
-    List<ReleaseDocument> getRecentReleases();
-    List<GeneralGoodsDocument> getRecentGeneralGoods();
+    Mono<List<CreatorSearchResult>> getRecentCreators();
+    Mono<List<ReleaseSearchResult>> getRecentReleases();
+    Mono<List<GeneralGoodsSearchResult>> getRecentGeneralGoods();
 }
