@@ -1,0 +1,74 @@
+package kr.magicbox.search.adapter.out.persistence.entity;
+
+import lombok.Builder;
+import lombok.Getter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
+import java.time.Instant;
+
+@Getter
+@Builder
+@Table("search_inbox")
+public class SearchInboxEntity {
+
+    @Id
+    private Long id;
+
+    @Column("message_key")
+    private String messageKey;
+
+    @Column("topic")
+    private String topic;
+
+    @Column("kafka_partition")
+    private Integer partition;
+
+    @Column("kafka_offset")
+    private Long offset;
+
+    @Column("status")
+    private SearchInboxStatus status;
+
+    @Column("occurred_at")
+    private Instant occurredAt;
+
+    @CreatedDate
+    @Column("created_at")
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column("updated_at")
+    private Instant updatedAt;
+
+    public SearchInboxEntity markProcessed() {
+        return SearchInboxEntity.builder()
+                .id(this.id)
+                .messageKey(this.messageKey)
+                .topic(this.topic)
+                .partition(this.partition)
+                .offset(this.offset)
+                .status(SearchInboxStatus.PROCESSED)
+                .occurredAt(this.occurredAt)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .build();
+    }
+
+    public SearchInboxEntity markDeadLettered() {
+        return SearchInboxEntity.builder()
+                .id(this.id)
+                .messageKey(this.messageKey)
+                .topic(this.topic)
+                .partition(this.partition)
+                .offset(this.offset)
+                .status(SearchInboxStatus.DEAD_LETTERED)
+                .occurredAt(this.occurredAt)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .build();
+    }
+}

@@ -3,8 +3,54 @@ spring:
     name: search-prod
   jackson:
     property-naming-strategy: SNAKE_CASE
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    listener:
+      ack-mode: record
+      missing-topics-fatal: true
+    consumer:
+      group-id: search-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.trusted.packages: "kr.magicbox.search.adapter.in.kafka.event"
+        spring.json.type.mapping: >
+          creator-certification-approved:kr.magicbox.search.adapter.in.kafka.event.CreatorCertificationApprovedEvent,
+          creator-profile-updated:kr.magicbox.search.adapter.in.kafka.event.CreatorProfileUpdatedEvent,
+          creator-revoked:kr.magicbox.search.adapter.in.kafka.event.CreatorRevokedEvent,
+          release-created:kr.magicbox.search.adapter.in.kafka.event.ReleaseCreatedEvent,
+          release-updated:kr.magicbox.search.adapter.in.kafka.event.ReleaseUpdatedEvent,
+          release-deleted:kr.magicbox.search.adapter.in.kafka.event.ReleaseDeletedEvent,
+          general-goods-created:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsCreatedEvent,
+          general-goods-updated:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsUpdatedEvent,
+          general-goods-deleted:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsDeletedEvent
+    retry:
+      topic:
+        backoff:
+          multiplier: 2
+          delay: 1s
+        attempts: 5
+  r2dbc:
+    url: ${R2DBC_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+  sql:
+    init:
+      mode: never
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URL}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
-security:
-  trusted:
-    ips:
-      - ${TRUSTED_IP_GATEWAY}
+inbox:
+  max-event-age-minutes: 5
+
+cache:
+  popular-ttl-minutes: 5
+  recent-ttl-minutes: 5
+  popular-query-ttl-hours: 24
+  history-max-size: 20
