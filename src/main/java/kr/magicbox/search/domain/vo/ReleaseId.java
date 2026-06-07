@@ -1,12 +1,10 @@
 package kr.magicbox.search.domain.vo;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import kr.magicbox.search.domain.exception.InvalidFieldException;
 
-public record ReleaseId(@JsonValue Long value) {
+public record ReleaseId(Long value) {
     public ReleaseId {
-        if (value == null || value <= 0) {
-            throw new IllegalArgumentException("ReleaseId must be positive");
-        }
+        if (value == null || value <= 0) throw new InvalidFieldException("릴리즈 ID는 양수여야 합니다.");
     }
 
     public static ReleaseId of(Long value) {

@@ -1,12 +1,10 @@
 package kr.magicbox.search.domain.vo;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import kr.magicbox.search.domain.exception.InvalidFieldException;
 
-public record CreatorId(@JsonValue Long value) {
+public record CreatorId(Long value) {
     public CreatorId {
-        if (value == null || value <= 0) {
-            throw new IllegalArgumentException("CreatorId must be positive");
-        }
+        if (value == null || value <= 0) throw new InvalidFieldException("크리에이터 ID는 양수여야 합니다.");
     }
 
     public static CreatorId of(Long value) {
