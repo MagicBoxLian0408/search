@@ -1,7 +1,0 @@
-{
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"/Users/kdw08/Desktop/magicbox/services/search/src/main/java/kr/magicbox/search/adapter/in/web/controller/SearchController.java\",\"limit\":5}",
-  "error": "File does not exist. Note: your current working directory is /Users/kdw08/Desktop/magicbox/services/search.",
-  "timestamp": "2026-06-07T05:29:34.934Z",
-  "retry_count": 1
-}
