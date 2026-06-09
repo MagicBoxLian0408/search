@@ -13,7 +13,7 @@ import java.util.List;
 
 @Getter
 @Builder
-@Document(indexName = "release-index")
+@Document(indexName = "release-index", createIndex = false)
 public class ReleaseDocument {
 
     @Id
