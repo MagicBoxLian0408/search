@@ -13,7 +13,7 @@ import java.util.List;
 
 @Getter
 @Builder
-@Document(indexName = "general-goods-index")
+@Document(indexName = "general-goods-index", createIndex = false)
 public class GeneralGoodsDocument {
 
     @Id

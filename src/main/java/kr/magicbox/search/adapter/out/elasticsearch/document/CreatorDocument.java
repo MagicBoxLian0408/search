@@ -13,7 +13,7 @@ import java.util.List;
 
 @Getter
 @Builder
-@Document(indexName = "creator-index")
+@Document(indexName = "creator-index", createIndex = false)
 public class CreatorDocument {
 
     @Id
