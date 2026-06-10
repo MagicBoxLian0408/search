@@ -3,8 +3,10 @@ package kr.magicbox.search.adapter.out.elasticsearch;
 import kr.magicbox.search.adapter.out.elasticsearch.document.ReleaseDocument;
 import kr.magicbox.search.application.port.out.ReleaseIndexPort;
 import lombok.RequiredArgsConstructor;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.query.Criteria;
@@ -65,10 +67,16 @@ public class ReleaseElasticsearchAdapter implements ReleaseIndexPort {
 
     @Override
     public Mono<List<ReleaseDocument>> searchByKeyword(String keyword, int page, int size) {
-        Criteria criteria = new Criteria("title").matches(keyword)
-                .or(new Criteria("description").matches(keyword));
-        CriteriaQuery query = new CriteriaQuery(criteria)
-                .setPageable(PageRequest.of(page, size));
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> b
+                        .must(m -> m.multiMatch(mm -> mm
+                                .query(keyword)
+                                .fields("title^2", "description")
+                                .operator(Operator.And)
+                        ))
+                ))
+                .withPageable(PageRequest.of(page, size))
+                .build();
         return operations.search(query, ReleaseDocument.class)
                 .map(SearchHit::getContent)
                 .collectList();

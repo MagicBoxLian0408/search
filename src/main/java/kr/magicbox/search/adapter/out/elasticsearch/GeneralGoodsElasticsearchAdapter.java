@@ -3,12 +3,14 @@ package kr.magicbox.search.adapter.out.elasticsearch;
 import kr.magicbox.search.adapter.out.elasticsearch.document.GeneralGoodsDocument;
 import kr.magicbox.search.application.port.out.GeneralGoodsIndexPort;
 import lombok.RequiredArgsConstructor;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -82,11 +84,17 @@ public class GeneralGoodsElasticsearchAdapter implements GeneralGoodsIndexPort {
 
     @Override
     public Mono<List<GeneralGoodsDocument>> searchByKeyword(String keyword, int page, int size) {
-        Criteria criteria = new Criteria("isDeleted").is(false)
-                .and(new Criteria("name").matches(keyword)
-                        .or(new Criteria("description").matches(keyword)));
-        CriteriaQuery query = new CriteriaQuery(criteria)
-                .setPageable(PageRequest.of(page, size));
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> b
+                        .filter(f -> f.term(t -> t.field("isDeleted").value(false)))
+                        .must(m -> m.multiMatch(mm -> mm
+                                .query(keyword)
+                                .fields("name^2", "description")
+                                .operator(Operator.And)
+                        ))
+                ))
+                .withPageable(PageRequest.of(page, size))
+                .build();
         return operations.search(query, GeneralGoodsDocument.class)
                 .map(SearchHit::getContent)
                 .collectList();

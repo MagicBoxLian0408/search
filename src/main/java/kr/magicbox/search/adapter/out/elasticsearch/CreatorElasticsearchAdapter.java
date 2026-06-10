@@ -5,11 +5,11 @@ import kr.magicbox.search.application.port.out.CreatorIndexPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
-import org.springframework.data.elasticsearch.core.query.UpdateQuery;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -80,12 +80,16 @@ public class CreatorElasticsearchAdapter implements CreatorIndexPort {
 
     @Override
     public Mono<List<CreatorDocument>> searchByKeyword(String keyword, int page, int size) {
-        Criteria criteria = new Criteria("status").is("ACTIVE")
-                .and(new Criteria("nickname").matches(keyword)
-                        .or(new Criteria("tagline").matches(keyword))
-                        .or(new Criteria("introduction").matches(keyword)));
-        CriteriaQuery query = new CriteriaQuery(criteria)
-                .setPageable(PageRequest.of(page, size));
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> b
+                        .filter(f -> f.term(t -> t.field("status").value("ACTIVE")))
+                        .must(m -> m.match(mm -> mm
+                                .field("nickname")
+                                .query(keyword)
+                        ))
+                ))
+                .withPageable(PageRequest.of(page, size))
+                .build();
         return operations.search(query, CreatorDocument.class)
                 .map(SearchHit::getContent)
                 .collectList();
