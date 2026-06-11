@@ -18,8 +18,8 @@ public class SearchInboxEntity {
     @Id
     private Long id;
 
-    @Column("message_key")
-    private String messageKey;
+    @Column("event_key")
+    private String eventKey;
 
     @Column("topic")
     private String topic;
@@ -47,7 +47,7 @@ public class SearchInboxEntity {
     public SearchInboxEntity markProcessed() {
         return SearchInboxEntity.builder()
                 .id(this.id)
-                .messageKey(this.messageKey)
+                .eventKey(this.eventKey)
                 .topic(this.topic)
                 .partition(this.partition)
                 .offset(this.offset)
@@ -61,7 +61,7 @@ public class SearchInboxEntity {
     public SearchInboxEntity markDeadLettered() {
         return SearchInboxEntity.builder()
                 .id(this.id)
-                .messageKey(this.messageKey)
+                .eventKey(this.eventKey)
                 .topic(this.topic)
                 .partition(this.partition)
                 .offset(this.offset)

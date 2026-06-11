@@ -5,6 +5,6 @@ import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import reactor.core.publisher.Mono;
 
 public interface SearchInboxRepository extends R2dbcRepository<SearchInboxEntity, Long> {
-    Mono<Boolean> existsByMessageKey(String messageKey);
+    Mono<Boolean> existsByEventKey(String eventKey);
     Mono<SearchInboxEntity> findByTopicAndPartitionAndOffset(String topic, Integer partition, Long offset);
 }
