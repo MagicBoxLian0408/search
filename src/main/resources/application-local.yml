@@ -29,6 +29,8 @@ spring:
           general-goods-created:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsCreatedEvent,
           general-goods-updated:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsUpdatedEvent,
           general-goods-deleted:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsDeletedEvent
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     retry:
       topic:
         backoff:

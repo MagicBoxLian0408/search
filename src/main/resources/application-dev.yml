@@ -27,6 +27,8 @@ spring:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
         spring.json.trusted.packages: "kr.magicbox.search.adapter.in.kafka.event"
         spring.json.type.mapping: creator-certification-approved:kr.magicbox.search.adapter.in.kafka.event.CreatorCertificationApprovedEvent,creator-profile-updated:kr.magicbox.search.adapter.in.kafka.event.CreatorProfileUpdatedEvent,creator-revoked:kr.magicbox.search.adapter.in.kafka.event.CreatorRevokedEvent,general-goods-created:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsCreatedEvent,general-goods-updated:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsUpdatedEvent,general-goods-deleted:kr.magicbox.search.adapter.in.kafka.event.GeneralGoodsDeletedEvent,release-created:kr.magicbox.search.adapter.in.kafka.event.ReleaseCreatedEvent,release-updated:kr.magicbox.search.adapter.in.kafka.event.ReleaseUpdatedEvent,release-deleted:kr.magicbox.search.adapter.in.kafka.event.ReleaseDeletedEvent
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     retry:
       topic:
         backoff:
