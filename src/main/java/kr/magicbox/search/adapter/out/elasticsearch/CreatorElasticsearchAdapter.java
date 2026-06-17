@@ -71,6 +71,48 @@ public class CreatorElasticsearchAdapter implements CreatorIndexPort {
     }
 
     @Override
+    public Mono<Void> incrementFollowerCount(Long creatorId) {
+        return findByCreatorId(creatorId)
+                .flatMap(doc -> {
+                    CreatorDocument updated = CreatorDocument.builder()
+                            .id(doc.getId())
+                            .creatorId(doc.getCreatorId())
+                            .userId(doc.getUserId())
+                            .nickname(doc.getNickname())
+                            .tagline(doc.getTagline())
+                            .profileImageUrl(doc.getProfileImageUrl())
+                            .introduction(doc.getIntroduction())
+                            .genres(doc.getGenres())
+                            .followerCount(doc.getFollowerCount() + 1)
+                            .status(doc.getStatus())
+                            .createdAt(doc.getCreatedAt())
+                            .build();
+                    return operations.save(updated);
+                }).then();
+    }
+
+    @Override
+    public Mono<Void> decrementFollowerCount(Long creatorId) {
+        return findByCreatorId(creatorId)
+                .flatMap(doc -> {
+                    CreatorDocument updated = CreatorDocument.builder()
+                            .id(doc.getId())
+                            .creatorId(doc.getCreatorId())
+                            .userId(doc.getUserId())
+                            .nickname(doc.getNickname())
+                            .tagline(doc.getTagline())
+                            .profileImageUrl(doc.getProfileImageUrl())
+                            .introduction(doc.getIntroduction())
+                            .genres(doc.getGenres())
+                            .followerCount(Math.max(0, doc.getFollowerCount() - 1))
+                            .status(doc.getStatus())
+                            .createdAt(doc.getCreatedAt())
+                            .build();
+                    return operations.save(updated);
+                }).then();
+    }
+
+    @Override
     public Mono<CreatorDocument> findByCreatorId(Long creatorId) {
         CriteriaQuery query = new CriteriaQuery(Criteria.where("creatorId").is(creatorId));
         return operations.search(query, CreatorDocument.class)

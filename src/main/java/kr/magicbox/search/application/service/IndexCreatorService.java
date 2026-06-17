@@ -19,16 +19,28 @@ public class IndexCreatorService implements IndexCreatorUseCase {
 
     @Override
     public void indexCreator(IndexCreatorCommand command) {
-        CreatorDocument document = CreatorDocument.builder()
-                .creatorId(command.creatorId())
-                .userId(command.userId())
-                .nickname(command.nickname())
-                .genres(command.genres())
-                .followerCount(0L)
-                .status(command.status())
-                .createdAt(Instant.now())
-                .build();
-        creatorIndexPort.save(document).subscribe();
+        creatorIndexPort.findByCreatorId(command.creatorId())
+                .defaultIfEmpty(CreatorDocument.builder()
+                        .creatorId(command.creatorId())
+                        .userId(command.userId())
+                        .followerCount(0L)
+                        .createdAt(Instant.now())
+                        .build())
+                .flatMap(existing -> {
+                    CreatorDocument document = CreatorDocument.builder()
+                            .id(existing.getId())
+                            .creatorId(command.creatorId())
+                            .userId(command.userId())
+                            .nickname(command.nickname())
+                            .profileImageUrl(command.profileImageUrl())
+                            .genres(command.genres())
+                            .followerCount(existing.getFollowerCount())
+                            .status(command.status())
+                            .createdAt(existing.getCreatedAt() != null ? existing.getCreatedAt() : Instant.now())
+                            .build();
+                    return creatorIndexPort.save(document);
+                })
+                .subscribe();
     }
 
     @Override
@@ -46,5 +58,15 @@ public class IndexCreatorService implements IndexCreatorUseCase {
     @Override
     public void deleteCreator(DeleteCreatorCommand command) {
         creatorIndexPort.updateStatus(command.creatorId(), "DELETED").subscribe();
+    }
+
+    @Override
+    public void incrementFollowerCount(Long creatorId) {
+        creatorIndexPort.incrementFollowerCount(creatorId).subscribe();
+    }
+
+    @Override
+    public void decrementFollowerCount(Long creatorId) {
+        creatorIndexPort.decrementFollowerCount(creatorId).subscribe();
     }
 }
