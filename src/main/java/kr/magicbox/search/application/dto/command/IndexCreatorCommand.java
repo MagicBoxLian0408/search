@@ -9,6 +9,7 @@ public record IndexCreatorCommand(
         Long creatorId,
         Long userId,
         String nickname,
+        String profileImageUrl,
         List<String> genres,
         String status
 ) {

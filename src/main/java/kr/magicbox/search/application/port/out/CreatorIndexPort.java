@@ -9,6 +9,8 @@ public interface CreatorIndexPort {
     Mono<Void> save(CreatorDocument document);
     Mono<Void> updateProfile(Long creatorId, String nickname, String tagline, String profileImageUrl, String introduction, List<String> genres);
     Mono<Void> updateStatus(Long creatorId, String status);
+    Mono<Void> incrementFollowerCount(Long creatorId);
+    Mono<Void> decrementFollowerCount(Long creatorId);
     Mono<CreatorDocument> findByCreatorId(Long creatorId);
     Mono<List<CreatorDocument>> searchByKeyword(String keyword, int page, int size);
     Mono<List<CreatorDocument>> findPopular(int size);
