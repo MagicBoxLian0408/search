@@ -31,6 +31,7 @@ public class CreatorEventKafkaListener {
                 .creatorId(event.creatorId())
                 .userId(event.userId())
                 .nickname(event.nickname())
+                .profileImageUrl(event.profileImageUrl())
                 .genres(event.genres())
                 .status(event.status())
                 .build());
