@@ -52,18 +52,16 @@ public class IdempotentAspect {
             return null;
         }
 
-        SearchInboxEntity inbox = searchInboxRepository.save(SearchInboxEntity.builder()
+        searchInboxRepository.save(SearchInboxEntity.builder()
                 .eventKey(eventKey)
                 .topic(consumerRecord.topic())
                 .partition(consumerRecord.partition())
                 .offset(consumerRecord.offset())
-                .status(SearchInboxStatus.PENDING)
+                .status(SearchInboxStatus.PROCESSED)
                 .occurredAt(occurredAt)
                 .build()).block();
 
         pjp.proceed();
-
-        searchInboxRepository.save(inbox.markProcessed()).block();
         return null;
     }
 
